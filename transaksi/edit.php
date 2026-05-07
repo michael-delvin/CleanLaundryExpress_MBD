@@ -1,7 +1,7 @@
 <?php
-/* transaksi/edit.php — Update status cucian & pembayaran */
-session_start();
+/* transaksi/edit.php — Update status transaksi */
 require_once '../koneksi.php';
+require_once '../includes/auth.php';   /* auth.php sudah handle session_start() */
 require_once '../includes/functions.php';
 
 $active_page = 'transaksi';
@@ -10,6 +10,7 @@ $base_path   = '../';
 $id = (int)($_GET['id'] ?? 0);
 if (!$id) redirect('index.php', 'danger', 'Transaksi tidak ditemukan.');
 
+/* ── Ambil data transaksi dari DB (selalu duluan sebelum proses POST) ── */
 $q = mysqli_query($conn, "
     SELECT t.*, p.nama_pelanggan, k.nama_karyawan, m.nama_metode
     FROM transaksi t
@@ -29,20 +30,33 @@ $q_det = mysqli_query($conn, "
     WHERE dt.id_transaksi = $id
 ");
 
-/* Proses POST */
+/* ── Proses POST ── */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $status_cucian = $_POST['status_cucian'];
-    $status_bayar  = $_POST['status_pembayaran'];
-    $tgl_diambil   = !empty($_POST['tanggal_diambil']) ? "'".$_POST['tanggal_diambil']."'" : 'NULL';
+
+    /* Status cucian: boleh diubah oleh semua role */
+    $status_cucian = trim($_POST['status_cucian'] ?? '');
+
+    /* Validasi nilai status cucian */
+    if (!in_array($status_cucian, ['Baru', 'Proses', 'Selesai'])) {
+        redirect("edit.php?id=$id", 'danger', 'Status cucian tidak valid.');
+    }
+
+    /* Status pembayaran & tanggal diambil: semua role boleh ubah */
+    $status_bayar = trim($_POST['status_pembayaran'] ?? '');
+    $tgl_raw      = !empty($_POST['tanggal_diambil']) ? $_POST['tanggal_diambil'] : null;
+
+    if (!in_array($status_bayar, ['Lunas', 'Belum Lunas'])) {
+        redirect("edit.php?id=$id", 'danger', 'Status pembayaran tidak valid.');
+    }
 
     $stmt = mysqli_prepare($conn,
         "UPDATE transaksi
-         SET status_cucian=?, status_pembayaran=?, tanggal_diambil=?
-         WHERE id_transaksi=?");
-    $tgl_raw = !empty($_POST['tanggal_diambil']) ? $_POST['tanggal_diambil'] : null;
+         SET status_cucian = ?, status_pembayaran = ?, tanggal_diambil = ?
+         WHERE id_transaksi = ?");
     mysqli_stmt_bind_param($stmt, 'sssi',
         $status_cucian, $status_bayar, $tgl_raw, $id);
     mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
 
     redirect('index.php', 'success', "Transaksi #$id berhasil diperbarui.");
 }
@@ -74,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <main class="page-content">
     <div class="grid-2" style="align-items:start;">
 
-        <!-- Info ringkasan -->
+        <!-- ── Kolom kiri: info & detail layanan ── -->
         <div style="display:flex;flex-direction:column;gap:16px;">
             <div class="card">
                 <div class="card-header"><span class="card-title">Informasi Transaksi</span></div>
@@ -125,22 +139,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
 
-        <!-- Form update status -->
+        <!-- ── Kolom kanan: form update status ── -->
         <div class="card">
             <div class="card-header"><span class="card-title">Update Status</span></div>
             <div class="card-body">
-                <form method="POST" style="display:flex;flex-direction:column;gap:0;">
+                <form method="POST" action="edit.php?id=<?= $id ?>">
 
+                    <!-- Status Cucian: semua role bisa ubah -->
                     <div class="form-group">
-                        <label class="form-label">Status Cucian</label>
-                        <select name="status_cucian" class="form-control">
-                            <option value="Baru"    <?= $txn['status_cucian']==='Baru'    ?'selected':'' ?>>Baru</option>
-                            <option value="Proses"  <?= $txn['status_cucian']==='Proses'  ?'selected':'' ?>>Proses</option>
-                            <option value="Selesai" <?= $txn['status_cucian']==='Selesai' ?'selected':'' ?>>Selesai</option>
-                        </select>
+                        <label class="form-label">
+                            Status Cucian <span style="color:red;">*</span>
+                        </label>
+                        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
+                            <?php
+                            $statuses = [
+                                'Baru'    => ['icon' => 'ti-clock',         'color' => '#6B7280', 'rgb' => '107,114,128'],
+                                'Proses'  => ['icon' => 'ti-wash-dryclean', 'color' => '#D97706', 'rgb' => '217,119,6'],
+                                'Selesai' => ['icon' => 'ti-circle-check',  'color' => '#1D9E75', 'rgb' => '29,158,117'],
+                            ];
+                            foreach ($statuses as $val => $cfg):
+                                $checked = $txn['status_cucian'] === $val;
+                            ?>
+                            <label class="status-card"
+                                   data-color="<?= $cfg['color'] ?>"
+                                   data-rgb="<?= $cfg['rgb'] ?>"
+                                   style="
+                                       flex:1;min-width:90px;cursor:pointer;
+                                       border:2px solid <?= $checked ? $cfg['color'] : 'var(--gray-200)' ?>;
+                                       border-radius:10px;padding:12px 10px;text-align:center;
+                                       background:<?= $checked ? 'rgba('.$cfg['rgb'].',.09)' : '#fff' ?>;
+                                       transition:all .15s;
+                                   ">
+                                <input type="radio" name="status_cucian" value="<?= $val ?>"
+                                       <?= $checked ? 'checked' : '' ?>
+                                       style="display:none;">
+                                <i class="ti <?= $cfg['icon'] ?>"
+                                   style="font-size:22px;color:<?= $cfg['color'] ?>;display:block;margin-bottom:4px;"></i>
+                                <span style="font-size:13px;font-weight:600;color:<?= $cfg['color'] ?>;"><?= $val ?></span>
+                            </label>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
 
-                    <div class="form-group">
+                    <!-- Status Pembayaran: semua role bisa ubah -->
+                    <div class="form-group" style="margin-top:8px;">
                         <label class="form-label">Status Pembayaran</label>
                         <select name="status_pembayaran" class="form-control">
                             <option value="Belum Lunas" <?= $txn['status_pembayaran']==='Belum Lunas'?'selected':'' ?>>Belum Lunas</option>
@@ -148,14 +190,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </select>
                     </div>
 
+                    <!-- Tanggal Diambil: semua role bisa ubah -->
                     <div class="form-group">
                         <label class="form-label">Tanggal Diambil</label>
                         <input type="date" name="tanggal_diambil" class="form-control"
                                value="<?= e($txn['tanggal_diambil'] ?? '') ?>">
-                        <span class="text-muted text-sm" style="margin-top:4px;display:block;">Isi jika cucian sudah diambil pelanggan.</span>
+                        <span class="text-muted text-sm" style="margin-top:4px;display:block;">
+                            Isi jika cucian sudah diambil pelanggan.
+                        </span>
                     </div>
 
-                    <button type="submit" class="btn btn-primary" style="justify-content:center;">
+                    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">
                         <i class="ti ti-device-floppy"></i> Simpan Perubahan
                     </button>
 
@@ -166,5 +211,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
     </main>
 </div>
+
+<style>
+.form-group  { margin-bottom:16px; }
+.form-label  { display:block;font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:6px; }
+.form-control {
+    width:100%;padding:9px 12px;border:1.5px solid var(--gray-200);
+    border-radius:8px;font-size:14px;color:var(--gray-800);outline:none;
+    transition:border-color .15s;box-sizing:border-box;font-family:inherit;
+    background:#fff;
+}
+.form-control:focus { border-color:#1D9E75;box-shadow:0 0 0 3px rgba(29,158,117,.1); }
+.status-card:hover { filter:brightness(.97); }
+</style>
+
+<script>
+function highlightStatus() {
+    document.querySelectorAll('.status-card').forEach(label => {
+        const radio = label.querySelector('input[type="radio"]');
+        const color = label.dataset.color;
+        const rgb   = label.dataset.rgb;
+        if (radio.checked) {
+            label.style.borderColor = color;
+            label.style.background  = `rgba(${rgb},.09)`;
+        } else {
+            label.style.borderColor = 'var(--gray-200)';
+            label.style.background  = '#fff';
+        }
+    });
+}
+
+document.querySelectorAll('input[name="status_cucian"]').forEach(r => {
+    r.addEventListener('change', highlightStatus);
+});
+
+highlightStatus();
+</script>
 </body>
 </html>

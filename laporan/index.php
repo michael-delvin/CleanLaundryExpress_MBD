@@ -2,7 +2,9 @@
 /* laporan/index.php — Laporan keuangan */
 session_start();
 require_once '../koneksi.php';
+require_once '../includes/auth.php';
 require_once '../includes/functions.php';
+only_admin();
 
 $active_page = 'laporan';
 $base_path   = '../';

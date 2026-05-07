@@ -2,6 +2,7 @@
 /* pelanggan/edit.php — Form Edit Pelanggan */
 session_start();
 require_once '../koneksi.php';
+require_once '../includes/auth.php';
 require_once '../includes/functions.php';
  
 $active_page = 'pelanggan';

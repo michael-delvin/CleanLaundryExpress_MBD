@@ -1,7 +1,7 @@
 <?php
 /* transaksi/tambah.php — Form input transaksi baru */
-session_start();
 require_once '../koneksi.php';
+require_once '../includes/auth.php';
 require_once '../includes/functions.php';
 
 $active_page = 'transaksi_tambah';
@@ -9,9 +9,21 @@ $base_path   = '../';
 
 /* ── Data untuk dropdown ── */
 $pelanggan_list = mysqli_query($conn, "SELECT id_pelanggan, nama_pelanggan, no_telepon FROM pelanggan ORDER BY nama_pelanggan");
-$karyawan_list  = mysqli_query($conn, "SELECT id_karyawan, nama_karyawan FROM karyawan ORDER BY nama_karyawan");
 $layanan_list   = mysqli_query($conn, "SELECT * FROM layanan ORDER BY nama_layanan");
 $metode_list    = mysqli_query($conn, "SELECT * FROM metode_pembayaran");
+
+/*
+ * Karyawan:
+ * - Kasir  → otomatis terisi dari session (tidak bisa diganti)
+ * - Admin  → dropdown pilihan semua karyawan
+ */
+if (is_kasir()) {
+    $id_karyawan_login = (int)$_SESSION['user_id'];
+    $res_kar = mysqli_query($conn, "SELECT id_karyawan, nama_karyawan FROM karyawan WHERE id_karyawan = $id_karyawan_login");
+    $karyawan_login = mysqli_fetch_assoc($res_kar);
+} else {
+    $karyawan_list = mysqli_query($conn, "SELECT id_karyawan, nama_karyawan FROM karyawan ORDER BY nama_karyawan");
+}
 
 /* ── Kumpulkan layanan ke array (untuk JS) ── */
 $layanan_arr = [];
@@ -23,11 +35,12 @@ mysqli_data_seek($layanan_list, 0);
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id_pelanggan  = (int)($_POST['id_pelanggan']      ?? 0);
-    $id_karyawan   = (int)($_POST['id_karyawan']       ?? 0);
+    /* Kasir: paksa pakai id_karyawan dari session, abaikan POST */
+    $id_karyawan   = is_kasir() ? (int)$_SESSION['user_id'] : (int)($_POST['id_karyawan'] ?? 0);
     $id_metode     = (int)($_POST['id_metode']         ?? 0);
     $tgl_masuk     = trim($_POST['tanggal_masuk']      ?? '');
     $status_cucian = 'Baru';
-    $status_bayar  = trim($_POST['status_pembayaran']  ?? 'Belum Lunas');
+    $status_bayar  = trim($_POST['status_pembayaran']  ?? '');
 
     /* Detail layanan — filter dulu yang id-nya 0 / kosong */
     $layanan_ids_raw = $_POST['layanan_id'] ?? [];
@@ -38,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     foreach ($layanan_ids_raw as $idx => $id_lay) {
         $id_lay = (int)$id_lay;
         if ($id_lay <= 0) continue;          // ← skip "-- Pilih --"
-        $jumlah = max(0.5, (float)($jumlah_arr_raw[$idx] ?? 1));
+        $jumlah = max(1, (int)($jumlah_arr_raw[$idx] ?? 1));
         $baris_valid[] = ['id_layanan' => $id_lay, 'jumlah' => $jumlah];
     }
 
@@ -51,6 +64,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Metode pembayaran wajib dipilih.';
     } elseif ($tgl_masuk === '') {
         $error = 'Tanggal masuk wajib diisi.';
+    } elseif ($status_bayar === '') {
+        $error = 'Status pembayaran wajib dipilih.';
     } elseif (empty($baris_valid)) {
         $error = 'Pilih minimal satu layanan sebelum menyimpan transaksi.';
     } else {
@@ -207,22 +222,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <!-- Karyawan -->
                         <div class="form-group">
                             <label class="form-label">Karyawan (Kasir) <span style="color:red;">*</span></label>
-                            <select name="id_karyawan" class="form-control" required>
-                                <option value="">-- Pilih karyawan --</option>
-                                <?php while ($k = mysqli_fetch_assoc($karyawan_list)): ?>
-                                <option value="<?= $k['id_karyawan'] ?>"
-                                    <?= (($_POST['id_karyawan'] ?? '') == $k['id_karyawan']) ? 'selected' : '' ?>>
-                                    <?= e($k['nama_karyawan']) ?>
-                                </option>
-                                <?php endwhile; ?>
-                            </select>
+                            <?php if (is_kasir()): ?>
+                                <!-- Kasir: otomatis terisi, tidak bisa diubah -->
+                                <input type="hidden" name="id_karyawan" value="<?= $karyawan_login['id_karyawan'] ?>">
+                                <input type="text" class="form-control"
+                                       value="<?= e($karyawan_login['nama_karyawan']) ?>"
+                                       disabled
+                                       style="background:#F3F4F6;color:var(--gray-600);cursor:not-allowed;">
+                            <?php else: ?>
+                                <!-- Admin: dropdown pilihan semua karyawan -->
+                                <select name="id_karyawan" class="form-control" required>
+                                    <option value="">-- Pilih karyawan --</option>
+                                    <?php while ($k = mysqli_fetch_assoc($karyawan_list)): ?>
+                                    <option value="<?= $k['id_karyawan'] ?>"
+                                        <?= (($_POST['id_karyawan'] ?? '') == $k['id_karyawan']) ? 'selected' : '' ?>>
+                                        <?= e($k['nama_karyawan']) ?>
+                                    </option>
+                                    <?php endwhile; ?>
+                                </select>
+                            <?php endif; ?>
                         </div>
 
                         <!-- Tanggal Masuk -->
                         <div class="form-group">
                             <label class="form-label">Tanggal Masuk <span style="color:red;">*</span></label>
                             <input type="date" name="tanggal_masuk" class="form-control"
-                                   value="<?= htmlspecialchars($_POST['tanggal_masuk'] ?? date('Y-m-d')) ?>"
+                                   value="<?= htmlspecialchars($_POST['tanggal_masuk'] ?? '') ?>"
                                    required>
                         </div>
 
@@ -244,7 +269,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="form-group">
                             <label class="form-label">Status Pembayaran <span style="color:red;">*</span></label>
                             <select name="status_pembayaran" class="form-control" required>
-                                <option value="Belum Lunas" <?= (($_POST['status_pembayaran'] ?? 'Belum Lunas')==='Belum Lunas')?'selected':'' ?>>Belum Lunas</option>
+                                <option value="">-- Pilih status pembayaran --</option>
+                                <option value="Belum Lunas" <?= (($_POST['status_pembayaran'] ?? '')==='Belum Lunas')?'selected':'' ?>>Belum Lunas</option>
                                 <option value="Lunas"       <?= (($_POST['status_pembayaran'] ?? '')==='Lunas')?'selected':'' ?>>Lunas</option>
                             </select>
                         </div>
@@ -370,7 +396,7 @@ function tambahBaris() {
             ${opts}
         </select>
         <div style="text-align:right;font-size:13px;font-weight:600;" class="harga-label">—</div>
-        <input type="number" name="jumlah[]" value="1" min="0.5" step="0.5"
+        <input type="number" name="jumlah[]" value="1" min="1" step="1"
                class="form-control" style="text-align:right;"
                oninput="hitungBaris(this)">
         <div style="text-align:right;font-size:13px;font-weight:600;color:#1D9E75;"
@@ -392,7 +418,7 @@ function hitungBaris(el) {
     const opt      = select.options[select.selectedIndex];
     const harga    = parseInt(opt.dataset.harga)  || 0;
     const waktu    = opt.dataset.waktu || '';
-    const jumlah   = parseFloat(row.querySelector('input[name="jumlah[]"]').value) || 0;
+    const jumlah   = parseInt(row.querySelector('input[name="jumlah[]"]').value) || 0;
     const subtotal = harga * jumlah;
 
     row.querySelector('.harga-label').textContent    = harga ? rupiah(harga) : '—';
@@ -419,7 +445,7 @@ function updateRingkasan() {
         const opt    = select.options[select.selectedIndex];
         const harga  = parseInt(opt.dataset.harga) || 0;
         const waktu  = opt.dataset.waktu || '';
-        const jumlah = parseFloat(row.querySelector('input').value) || 0;
+        const jumlah = parseInt(row.querySelector('input').value) || 0;
         if (harga && jumlah) {
             total  += harga * jumlah;
             items  += 1;

@@ -2,18 +2,18 @@
 /* transaksi/index.php — Daftar semua transaksi */
 session_start();
 require_once '../koneksi.php';
+require_once '../includes/auth.php';
 require_once '../includes/functions.php';
 
 $active_page = 'transaksi';
 $base_path   = '../';
 
 /* ── Filter & pencarian ── */
-$search       = trim($_GET['q']    ?? '');
-$filter_status= $_GET['status']   ?? '';
-$filter_bayar = $_GET['bayar']    ?? '';
+$search        = trim($_GET['q']    ?? '');
+$filter_status = $_GET['status']   ?? '';
+$filter_bayar  = $_GET['bayar']    ?? '';
 
 $where = ["1=1"];
-$params = [];
 
 if ($search !== '') {
     $s = mysqli_real_escape_string($conn, $search);
@@ -90,8 +90,8 @@ $q = mysqli_query($conn, "
                     <label class="form-label">Status Bayar</label>
                     <select name="bayar" class="form-control">
                         <option value="">Semua</option>
-                        <option value="Lunas"      <?= $filter_bayar==='Lunas'      ?'selected':'' ?>>Lunas</option>
-                        <option value="Belum Lunas"<?= $filter_bayar==='Belum Lunas'?'selected':'' ?>>Belum Lunas</option>
+                        <option value="Lunas"       <?= $filter_bayar==='Lunas'       ?'selected':'' ?>>Lunas</option>
+                        <option value="Belum Lunas" <?= $filter_bayar==='Belum Lunas' ?'selected':'' ?>>Belum Lunas</option>
                     </select>
                 </div>
                 <div style="display:flex;gap:8px;">
@@ -140,15 +140,21 @@ $q = mysqli_query($conn, "
                             <td><?= badge_status_cucian($row['status_cucian']) ?></td>
                             <td><?= badge_status_bayar($row['status_pembayaran']) ?></td>
                             <td style="text-align:center;white-space:nowrap;">
+                                <!-- Edit: semua role boleh -->
                                 <a href="edit.php?id=<?= $row['id_transaksi'] ?>"
-                                   class="btn btn-outline btn-sm">
+                                   class="btn btn-outline btn-sm"
+                                   title="Update Status">
                                     <i class="ti ti-edit"></i>
                                 </a>
+                                <!-- Hapus: hanya admin -->
+                                <?php if (is_admin()): ?>
                                 <a href="hapus.php?id=<?= $row['id_transaksi'] ?>"
                                    class="btn btn-danger btn-sm"
+                                   title="Hapus Transaksi"
                                    onclick="return confirm('Yakin hapus transaksi #<?= $row['id_transaksi'] ?>?')">
                                     <i class="ti ti-trash"></i>
                                 </a>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endwhile; ?>

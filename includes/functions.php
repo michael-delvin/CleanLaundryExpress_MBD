@@ -55,7 +55,7 @@ function tgl_indo(string $tgl): string {
  */
 function redirect(string $url, string $tipe = '', string $pesan = ''): void {
     if ($tipe && $pesan) {
-        $_SESSION['flash'] = ['tipe' => $tipe, 'pesan' => $pesan];
+        $_SESSION['flash'] = ['type' => $tipe, 'msg' => $pesan];
     }
     header("Location: $url");
     exit;
@@ -67,10 +67,10 @@ function redirect(string $url, string $tipe = '', string $pesan = ''): void {
 function flash(): string {
     if (isset($_SESSION['flash'])) {
         $f   = $_SESSION['flash'];
-        $cls = $f['tipe'] === 'success' ? 'alert-success' : 'alert-danger';
-        $ico = $f['tipe'] === 'success' ? 'ti-circle-check' : 'ti-alert-circle';
+        $cls = $f['type'] === 'success' ? 'alert-success' : 'alert-danger';
+        $ico = $f['type'] === 'success' ? 'ti-circle-check' : 'ti-alert-circle';
         unset($_SESSION['flash']);
-        return "<div class=\"alert $cls\"><i class=\"ti $ico\"></i> {$f['pesan']}</div>";
+        return "<div class=\"alert $cls\"><i class=\"ti $ico\"></i> {$f['msg']}</div>";
     }
     return '';
 }

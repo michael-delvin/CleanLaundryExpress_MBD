@@ -43,6 +43,7 @@ if (!isset($active_page)) $active_page = '';
             <i class="ti ti-users"></i> Pelanggan
         </a>
 
+        <?php if (is_admin()): ?>
         <a href="<?= $base_path ?? '' ?>layanan/index.php"
            class="nav-link <?= $active_page === 'layanan' ? 'active' : '' ?>">
             <i class="ti ti-ironing"></i> Layanan
@@ -52,19 +53,16 @@ if (!isset($active_page)) $active_page = '';
            class="nav-link <?= $active_page === 'karyawan' ? 'active' : '' ?>">
             <i class="ti ti-id-badge"></i> Karyawan
         </a>
+        <?php endif; ?>
 
+        <?php if (is_admin()): ?>
         <div class="sidebar-section-label" style="margin-top:8px;">Laporan</div>
 
         <a href="<?= $base_path ?? '' ?>laporan/index.php"
            class="nav-link <?= $active_page === 'laporan' ? 'active' : '' ?>">
             <i class="ti ti-report-money"></i> Laporan Keuangan
         </a>
+        <?php endif; ?>
     </nav>
 
-    <div class="sidebar-footer">
-        <a href="<?= $base_path ?? '' ?>pengaturan.php"
-           class="nav-link <?= $active_page === 'pengaturan' ? 'active' : '' ?>">
-            <i class="ti ti-settings"></i> Pengaturan
-        </a>
-    </div>
 </aside>

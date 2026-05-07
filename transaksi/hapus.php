@@ -2,7 +2,13 @@
 /* transaksi/hapus.php */
 session_start();
 require_once '../koneksi.php';
+require_once '../includes/auth.php';
 require_once '../includes/functions.php';
+
+/* Hanya admin yang boleh menghapus transaksi */
+if (!is_admin()) {
+    redirect('index.php', 'danger', 'Akses ditolak. Hanya admin yang dapat menghapus transaksi.');
+}
 
 $id = (int)($_GET['id'] ?? 0);
 if (!$id) redirect('index.php', 'danger', 'ID tidak valid.');
