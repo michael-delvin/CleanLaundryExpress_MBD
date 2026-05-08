@@ -48,7 +48,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors['no_telepon'] = 'Nomor telepon harus terdiri dari 11–13 digit angka.';
         }
     }
-    }
  
     /* Cek duplikat nama (kecuali diri sendiri) */
     if (empty($errors['nama_pelanggan'])) {
