@@ -15,16 +15,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['hapus_id'])) {
 
     // Tidak boleh hapus diri sendiri
     if ($id === (int)$_SESSION['user_id']) {
-        $_SESSION['flash'] = ['tipe' => 'danger', 'pesan' => 'Anda tidak dapat menghapus akun Anda sendiri.'];
+        $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Anda tidak dapat menghapus akun Anda sendiri.'];
     } else {
         // Cek apakah karyawan punya transaksi
         $cek = mysqli_query($conn, "SELECT COUNT(*) AS n FROM transaksi WHERE id_karyawan = $id");
         $row_cek = mysqli_fetch_assoc($cek);
         if ($row_cek['n'] > 0) {
-            $_SESSION['flash'] = ['tipe' => 'danger', 'pesan' => 'Karyawan tidak dapat dihapus karena memiliki riwayat transaksi.'];
+            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Karyawan tidak dapat dihapus karena memiliki riwayat transaksi.'];
         } else {
             mysqli_query($conn, "DELETE FROM karyawan WHERE id_karyawan = $id");
-            $_SESSION['flash'] = ['tipe' => 'success', 'pesan' => 'Karyawan berhasil dihapus.'];
+            $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Karyawan berhasil dihapus.'];
         }
     }
     header('Location: index.php');

@@ -29,22 +29,22 @@ switch ($periode) {
 /* ── Metrik ringkasan ── */
 $q_metrics = mysqli_query($conn, "
     SELECT
-        COALESCE(SUM(t.total_harga), 0)                                                          AS total_pendapatan,
-        COUNT(t.id_transaksi)                                                                    AS total_transaksi,
-        COUNT(DISTINCT t.id_pelanggan)                                                           AS pelanggan_aktif,
-        SUM(t.status_pembayaran = 'Belum Lunas')                                                 AS belum_lunas,
+        COALESCE(SUM(CASE WHEN t.status_pembayaran='Lunas' THEN t.total_harga ELSE 0 END), 0)     AS total_pendapatan,
+        COUNT(t.id_transaksi)                                                                      AS total_transaksi,
+        COUNT(DISTINCT t.id_pelanggan)                                                             AS pelanggan_aktif,
+        SUM(t.status_pembayaran = 'Belum Lunas')                                                   AS belum_lunas,
         COALESCE(SUM(CASE WHEN t.status_pembayaran='Belum Lunas' THEN t.total_harga ELSE 0 END),0) AS nominal_belum_lunas
     FROM transaksi t
     $where_tgl
 ");
 $metrics = mysqli_fetch_assoc($q_metrics);
  
-/* ── Grafik pendapatan harian (30 hari) ── */
+/* ── Grafik pendapatan harian (30 hari) — hanya Lunas ── */
 $q_grafik = mysqli_query($conn, "
     SELECT
         DATE_FORMAT(t.tanggal_masuk, '%d %b') AS hari,
         t.tanggal_masuk                        AS tgl_raw,
-        COALESCE(SUM(t.total_harga), 0)        AS total
+        COALESCE(SUM(CASE WHEN t.status_pembayaran='Lunas' THEN t.total_harga ELSE 0 END), 0) AS total
     FROM transaksi t
     WHERE t.tanggal_masuk >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
     GROUP BY t.tanggal_masuk
@@ -173,7 +173,7 @@ $layanan_colors = ['#1D9E75','#378ADD','#EF9F27','#7F77DD','#D85A30'];
                 <div class="metric-icon" style="background:#E1F5EE;color:#1D9E75;">
                     <i class="ti ti-cash"></i>
                 </div>
-                <div class="metric-label">Total Pendapatan</div>
+                <div class="metric-label">Pendapatan Lunas</div>
                 <div class="metric-value"><?= rupiah((int)$metrics['total_pendapatan']) ?></div>
                 <div class="metric-delta delta-up">
                     <i class="ti ti-trending-up" style="font-size:11px;"></i>
@@ -396,10 +396,30 @@ if (grafikLabels.length > 0) {
                     ticks: { font: { size: 11 }, maxRotation: 45, autoSkip: true, maxTicksLimit: 12 }
                 },
                 y: {
+                    beginAtZero: true,
                     grid: { color: 'rgba(0,0,0,0.05)' },
                     ticks: {
                         font: { size: 11 },
-                        callback: v => 'Rp ' + (v/1000).toFixed(0) + 'rb'
+                        maxTicksLimit: 6,
+                        callback: function(v) {
+                            if (v === 0) return 'Rp 0';
+                            if (v >= 1000000) return 'Rp ' + (v / 1000000).toLocaleString('id-ID', {maximumFractionDigits: 1}) + ' jt';
+                            if (v >= 1000)    return 'Rp ' + (v / 1000).toLocaleString('id-ID', {maximumFractionDigits: 0}) + ' rb';
+                            return 'Rp ' + v;
+                        }
+                    },
+                    afterDataLimits: function(scale) {
+                        const max = scale.max || 0;
+                        let step;
+                        if      (max <= 50000)   step = 10000;
+                        else if (max <= 100000)  step = 20000;
+                        else if (max <= 250000)  step = 50000;
+                        else if (max <= 500000)  step = 100000;
+                        else if (max <= 1000000) step = 200000;
+                        else if (max <= 2500000) step = 500000;
+                        else                     step = 1000000;
+                        scale.max = Math.ceil((max * 1.1) / step) * step;
+                        scale.min = 0;
                     }
                 }
             }

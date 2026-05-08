@@ -16,10 +16,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['hapus_id'])) {
     $cek = mysqli_query($conn, "SELECT COUNT(*) AS n FROM detail_transaksi WHERE id_layanan = $id");
     $row_cek = mysqli_fetch_assoc($cek);
     if ($row_cek['n'] > 0) {
-        $_SESSION['flash'] = ['tipe' => 'danger', 'pesan' => 'Layanan tidak dapat dihapus karena sudah digunakan dalam transaksi.'];
+        $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Layanan tidak dapat dihapus karena sudah digunakan dalam transaksi.'];
     } else {
         mysqli_query($conn, "DELETE FROM layanan WHERE id_layanan = $id");
-        $_SESSION['flash'] = ['tipe' => 'success', 'pesan' => 'Layanan berhasil dihapus.'];
+        $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Layanan berhasil dihapus.'];
     }
     header('Location: index.php');
     exit;

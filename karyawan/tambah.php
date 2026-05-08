@@ -81,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             VALUES ('$nama', '$username', '$hash_esc', '$role', '$hp', '$alamat')
         ");
 
-        $_SESSION['flash'] = ['tipe' => 'success', 'pesan' => 'Karyawan <strong>' . e($input['nama_karyawan']) . '</strong> berhasil ditambahkan.'];
+        $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Karyawan <strong>' . e($input['nama_karyawan']) . '</strong> berhasil ditambahkan.'];
         header('Location: index.php');
         exit;
     }

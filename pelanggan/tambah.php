@@ -23,8 +23,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors['nama_pelanggan'] = 'Nama maksimal 100 karakter.';
     }
  
-    if ($input['no_telepon'] !== '' && !preg_match('/^[0-9+\-\s]{6,20}$/', $input['no_telepon'])) {
-        $errors['no_telepon'] = 'Format nomor telepon tidak valid.';
+    if ($input['no_telepon'] !== '') {
+        $digits_only = preg_replace('/[^0-9]/', '', $input['no_telepon']);
+        if (!preg_match('/^[0-9+\-\s]{11,15}$/', $input['no_telepon']) || strlen($digits_only) < 11 || strlen($digits_only) > 13) {
+            $errors['no_telepon'] = 'Nomor telepon harus terdiri dari 11–13 digit angka.';
+        }
     }
  
     /* Cek duplikat nama */

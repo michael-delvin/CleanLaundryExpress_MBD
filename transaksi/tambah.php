@@ -118,7 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                       tanggal_masuk, estimasi_waktu_selesai,
                       status_cucian, total_harga, status_pembayaran)
                      VALUES (?,?,?,?,?,?,?,?,?)");
-                mysqli_stmt_bind_param($stmt, 'iiiiissss',
+                mysqli_stmt_bind_param($stmt, 'iiiisssis',
                     $id_txn, $id_pelanggan, $id_karyawan, $id_metode,
                     $tgl_masuk, $estimasi, $status_cucian,
                     $total_harga, $status_bayar);
@@ -247,7 +247,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="form-group">
                             <label class="form-label">Tanggal Masuk <span style="color:red;">*</span></label>
                             <input type="date" name="tanggal_masuk" class="form-control"
-                                   value="<?= htmlspecialchars($_POST['tanggal_masuk'] ?? '') ?>"
+                                   value="<?= htmlspecialchars($_POST['tanggal_masuk'] ?? date('Y-m-d')) ?>"
                                    required>
                         </div>
 

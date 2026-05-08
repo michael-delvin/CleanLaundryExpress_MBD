@@ -44,10 +44,14 @@ function badge_status_bayar(string $status): string {
  * Format tanggal ke Indonesia: 2026-03-01 → "1 Mar 2026"
  */
 function tgl_indo(string $tgl): string {
-    if (!$tgl || $tgl === '0000-00-00') return '-';
+    if (!$tgl || $tgl === '0000-00-00' || $tgl === '') return '-';
     $bulan = ['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-    [$y, $m, $d] = explode('-', $tgl);
-    return (int)$d . ' ' . $bulan[(int)$m] . ' ' . $y;
+    $parts = explode('-', $tgl);
+    if (count($parts) !== 3) return '-';
+    [$y, $m, $d] = $parts;
+    $m = (int)$m;
+    if ($m < 1 || $m > 12) return '-';
+    return (int)$d . ' ' . $bulan[$m] . ' ' . $y;
 }
 
 /**
@@ -66,11 +70,14 @@ function redirect(string $url, string $tipe = '', string $pesan = ''): void {
  */
 function flash(): string {
     if (isset($_SESSION['flash'])) {
-        $f   = $_SESSION['flash'];
-        $cls = $f['type'] === 'success' ? 'alert-success' : 'alert-danger';
-        $ico = $f['type'] === 'success' ? 'ti-circle-check' : 'ti-alert-circle';
+        $f    = $_SESSION['flash'];
+        $type = $f['type'] ?? ($f['tipe'] ?? 'danger');
+        $msg  = $f['msg']  ?? ($f['pesan'] ?? '');
+        $cls  = $type === 'success' ? 'alert-success' : 'alert-danger';
+        $ico  = $type === 'success' ? 'ti-circle-check' : 'ti-alert-circle';
         unset($_SESSION['flash']);
-        return "<div class=\"alert $cls\"><i class=\"ti $ico\"></i> {$f['msg']}</div>";
+        if ($msg === '') return '';
+        return "<div class=\"alert $cls\"><i class=\"ti $ico\"></i> $msg</div>";
     }
     return '';
 }

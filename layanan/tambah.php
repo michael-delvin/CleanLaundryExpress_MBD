@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             VALUES ('$nama', $harga, '$satuan', '$waktu')
         ");
 
-        $_SESSION['flash'] = ['tipe' => 'success', 'pesan' => 'Layanan <strong>' . e($input['nama_layanan']) . '</strong> berhasil ditambahkan.'];
+        $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Layanan <strong>' . e($input['nama_layanan']) . '</strong> berhasil ditambahkan.'];
         header('Location: index.php');
         exit;
     }

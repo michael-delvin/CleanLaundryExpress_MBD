@@ -17,7 +17,7 @@ if ($id <= 0) {
 
 $q_kar = mysqli_query($conn, "SELECT * FROM karyawan WHERE id_karyawan = $id LIMIT 1");
 if (mysqli_num_rows($q_kar) === 0) {
-    $_SESSION['flash'] = ['tipe' => 'danger', 'pesan' => 'Karyawan tidak ditemukan.'];
+    $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Karyawan tidak ditemukan.'];
     header('Location: index.php');
     exit;
 }
@@ -111,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             WHERE id_karyawan = $id
         ");
 
-        $_SESSION['flash'] = ['tipe' => 'success', 'pesan' => 'Data karyawan <strong>' . e($input['nama_karyawan']) . '</strong> berhasil diperbarui.'];
+        $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Data karyawan <strong>' . e($input['nama_karyawan']) . '</strong> berhasil diperbarui.'];
         header('Location: index.php');
         exit;
     }

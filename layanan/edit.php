@@ -17,7 +17,7 @@ if ($id <= 0) {
 
 $q_lay = mysqli_query($conn, "SELECT * FROM layanan WHERE id_layanan = $id LIMIT 1");
 if (mysqli_num_rows($q_lay) === 0) {
-    $_SESSION['flash'] = ['tipe' => 'danger', 'pesan' => 'Layanan tidak ditemukan.'];
+    $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Layanan tidak ditemukan.'];
     header('Location: index.php');
     exit;
 }
@@ -78,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             WHERE id_layanan = $id
         ");
 
-        $_SESSION['flash'] = ['tipe' => 'success', 'pesan' => 'Layanan <strong>' . e($input['nama_layanan']) . '</strong> berhasil diperbarui.'];
+        $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Layanan <strong>' . e($input['nama_layanan']) . '</strong> berhasil diperbarui.'];
         header('Location: index.php');
         exit;
     }

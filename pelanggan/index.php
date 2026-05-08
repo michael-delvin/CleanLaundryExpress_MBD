@@ -11,7 +11,7 @@ $base_path   = '../';
 /* ── Hapus pelanggan (hanya admin) ── */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['hapus_id'])) {
     if (!is_admin()) {
-        $_SESSION['flash'] = ['tipe' => 'danger', 'pesan' => 'Akses ditolak. Hanya admin yang dapat menghapus data pelanggan.'];
+        $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Akses ditolak. Hanya admin yang dapat menghapus data pelanggan.'];
         header('Location: index.php');
         exit;
     }
@@ -19,10 +19,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['hapus_id'])) {
     $cek = mysqli_query($conn, "SELECT COUNT(*) AS n FROM transaksi WHERE id_pelanggan = $id");
     $row_cek = mysqli_fetch_assoc($cek);
     if ($row_cek['n'] > 0) {
-        $_SESSION['flash'] = ['tipe' => 'danger', 'pesan' => 'Pelanggan tidak dapat dihapus karena memiliki riwayat transaksi.'];
+        $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Pelanggan tidak dapat dihapus karena memiliki riwayat transaksi.'];
     } else {
         mysqli_query($conn, "DELETE FROM pelanggan WHERE id_pelanggan = $id");
-        $_SESSION['flash'] = ['tipe' => 'success', 'pesan' => 'Pelanggan berhasil dihapus.'];
+        $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Pelanggan berhasil dihapus.'];
     }
     header('Location: index.php');
     exit;

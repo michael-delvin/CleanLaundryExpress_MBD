@@ -44,7 +44,7 @@ $q_lay = mysqli_query($conn, "
 /* ── Data grafik harian ── */
 $q_grafik = mysqli_query($conn, "
     SELECT DATE_FORMAT(tanggal_masuk,'%d %b') AS hari,
-           SUM(total_harga) AS total
+           SUM(CASE WHEN status_pembayaran='Lunas' THEN total_harga ELSE 0 END) AS total
     FROM transaksi
     WHERE tanggal_masuk BETWEEN '$dari_esc' AND '$sampai_esc'
     GROUP BY tanggal_masuk
